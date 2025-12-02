@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metro System Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>Metro System Dashboard</h1>
+</header>
+
+<main>
+  <table id="logsTable">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Station In</th>
+        <th>Station Out</th>
+        <th>Timestamp</th>
+        <th>Fare</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Data sẽ được inject bởi JS -->
+    </tbody>
+  </table>
+</main>
+
+<script>
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://metrosystem-c3170-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  db.ref('metro/transactions').on('value', snapshot => {
+    const data = snapshot.val();
+    const tbody = document.querySelector('#logsTable tbody');
+    tbody.innerHTML = "";
+
+    if (!data) return;
+
+    Object.keys(data).forEach(key => {
+      const row = document.createElement('tr');
+
+      row.innerHTML = `
+        <td>${data[key].uid || ""}</td>
+        <td>${data[key].station_in || ""}</td>
+        <td>${data[key].station_out || ""}</td>
+        <td>${data[key].timestamp ? new Date(data[key].timestamp * 1000).toLocaleString() : ""}</td>
+        <td>${data[key].fare || 0}</td>
+        <td>${data[key].status || ""}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản lý thẻ - Metro</title>
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+</head>
+
+<body>
+  <div class="header">
+    <h1>Quản lý thẻ</h1>
+    <a href="index.html" class="btn">Dashboard</a>
+  </div>
+
+  <div class="card" style="max-width:900px; margin:auto;">
+    <div class="controls">
+      <button id="createCard" class="btn">Tạo thẻ mới</button>
+    </div>
+
+    <div class="table-responsive card">
+      <table id="cardsTable">
+        <thead>
+          <tr>
+            <th>UID</th>
+            <th>Số dư</th>
+            <th>Last Topup</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://metrosystem-c3170-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const tbody = document.querySelector("#cardsTable tbody");
+
+  function formatTime(ts) {
+    return ts ? new Date(ts * 1000).toLocaleString() : "";
+  }
+
+  // render realtime
+  db.ref("metro/cards").on("value", snap => {
+    const data = snap.val() || {};
+    tbody.innerHTML = "";
+
+    Object.keys(data).forEach(uid => {
+      const c = data[uid];
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${uid}</td>
+        <td>${c.balance || 0}</td>
+        <td>${formatTime(c.last_topup)}</td>
+        <td>
+          <button class="btn" onclick="deleteCard('${uid}')">Xóa</button>
+          <button class="btn" style="background:#10b981" onclick="topupCard('${uid}')">Nạp</button>
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+  });
+
+  // Tạo thẻ mới
+  document.getElementById("createCard").addEventListener("click", async () => {
+    const uid = "UID_" + Math.random().toString(36).substring(2, 9).toUpperCase();
+    await db.ref("metro/cards/" + uid).set({
+      balance: 0,
+      created: Math.floor(Date.now() / 1000)
+    });
+
+    alert("Đã tạo thẻ: " + uid);
+  });
+
+  function deleteCard(uid) {
+    if (confirm("Xóa thẻ " + uid + " ?")) {
+      db.ref("metro/cards/" + uid).remove();
+    }
+  }
+
+  function topupCard(uid) {
+    window.location.href = "topup.html?uid=" + uid;
+  }
+</script>
+</body>
+</html>
