@@ -3,32 +3,37 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Metro Dashboard</title>
+  <title>Metro Dashboard - DataForce</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Firebase SDK (compat) -->
+
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
-<body>
-  <div class="header">
-    <h1>Metro System Dashboard</h1>
-    <div>
-      <a href="topup.html" class="btn">Nạp tiền</a>
-      <a href="cards.html" class="btn" style="background:#3b82f6">Quản lý thẻ</a>
-      <a href="stations.html" class="btn" style="background:#06b6d4">Ga</a>
-    </div>
-  </div>
 
-  <div class="container">
+<body>
+  <header class="header">
+    <div class="logo-area">
+      <img src="logo.png" class="logo" alt="DataForce Logo">
+      <h1 class="title">Metro System Dashboard</h1>
+    </div>
+
+    <nav class="nav">
+      <a href="topup.html" class="btn">Nạp tiền</a>
+      <a href="cards.html" class="btn blue">Quản lý thẻ</a>
+      <a href="stations.html" class="btn cyan">Ga</a>
+    </nav>
+  </header>
+
+  <main class="container">
+
     <div class="card">
+
       <div class="controls">
         <input id="filterUid" class="input" placeholder="Lọc theo UID" />
         <select id="filterStatus" class="input">
           <option value="">Tất cả trạng thái</option>
-          <option value="IN">IN</option>
-          <option value="OUT">OUT</option>
-          <option value="OK">OK</option>
-          <option value="FAILED">FAILED</option>
+          <option value="success">SUCCESS</option>
+          <option value="error">ERROR</option>
         </select>
         <button id="refresh" class="btn">Làm mới</button>
       </div>
@@ -37,20 +42,24 @@
         <table id="logsTable">
           <thead>
             <tr>
-              <th>UID</th><th>Station In</th><th>Station Out</th><th>Timestamp</th><th>Fare</th><th>Status</th>
+              <th>UID</th>
+              <th>Ga vào</th>
+              <th>Thời gian</th>
+              <th>Fare</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
-      <div class="footer small">Dữ liệu realtime từ Firebase Realtime Database</div>
+
+      <div class="footer small">Realtime từ Firebase Realtime Database</div>
     </div>
 
     <aside class="sidebar">
       <div class="card sidebar-card">
         <h3>Thông tin hệ thống</h3>
         <div class="section small">
-          <div>Thiết bị trực tuyến: <span id="onlineCount">0</span></div>
           <div>Tổng giao dịch: <span id="txCount">0</span></div>
           <div>Tổng tiền thu: <span id="totalFare">0</span> VND</div>
         </div>
@@ -59,31 +68,23 @@
       <div class="card sidebar-card">
         <h3>Hướng dẫn nhanh</h3>
         <div class="small">
-          - Dùng trang "Nạp tiền" để thay đổi số dư thẻ.<br/>
-          - Trang "Quản lý thẻ" xem chi tiết thẻ.<br/>
-          - Mỗi ESP8266 khi quẹt thẻ sẽ push 1 transaction vào /metro/transactions
+          - "Nạp tiền": thay đổi số dư thẻ.<br/>
+          - ESP8266 push mỗi giao dịch vào /metro/transactions.
         </div>
       </div>
     </aside>
-  </div>
 
-<script>
-  // Firebase config - THAY BẰNG CẤU HÌNH CỦA BẠN
+  </main>
+
+  <script>
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://metrosystem-c3170-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    databaseURL: "https://metrosystem-c3170-default-rtdb.asia-southeast1.firebasedatabase.app"
   };
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
   const tbody = document.querySelector('#logsTable tbody');
-  const onlineCountEl = document.getElementById('onlineCount');
   const txCountEl = document.getElementById('txCount');
   const totalFareEl = document.getElementById('totalFare');
   const filterUid = document.getElementById('filterUid');
@@ -91,54 +92,85 @@
   const refreshBtn = document.getElementById('refresh');
 
   function formatTime(ts){
-    if(!ts) return '';
-    return new Date(ts*1000).toLocaleString();
+    if (!ts) return "";
+    return new Date(ts * 1000).toLocaleString();
   }
 
   function renderRows(data){
     tbody.innerHTML = '';
-    if(!data) return;
-    const keys = Object.keys(data).sort((a,b)=> (data[b].timestamp||0)-(data[a].timestamp||0));
-    keys.forEach(k=>{
+    if (!data) return;
+
+    const keys = Object.keys(data).sort((a,b) =>
+      (data[b].timestamp || 0) - (data[a].timestamp || 0)
+    );
+
+    keys.forEach(k => {
       const item = data[k];
-      if(filterUid.value && !String(item.uid||'').includes(filterUid.value)) return;
-      if(filterStatus.value && (item.status||'') !== filterStatus.value) return;
+
+      if (filterUid.value && !String(item.uid).includes(filterUid.value)) return;
+      if (filterStatus.value && item.result !== filterStatus.value) return;
+
+      const badgeClass = item.result === "success" ? "success" : "fail";
+
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${item.uid||''}</td>
-        <td>${item.station_in||''}</td>
-        <td>${item.station_out||''}</td>
+      tr.innerHTML = `
+        <td>${item.uid || ''}</td>
+        <td>${item.station_in || ''}</td>
         <td>${formatTime(item.timestamp)}</td>
-        <td>${item.fare||0}</td>
-        <td><span class="badge ${item.status==='OK'?'success':'ok'}">${item.status||''}</span></td>`;
+        <td>${item.fare || 0}</td>
+        <td><span class="badge ${badgeClass}">${item.result}</span></td>
+      `;
       tbody.appendChild(tr);
     });
   }
 
-  // realtime listeners
-  db.ref('metro/transactions').on('value', snap=>{
+  db.ref("metro/transactions").on("value", snap => {
     const data = snap.val();
     renderRows(data);
-    // summary stats
-    let txCount=0, totalFare=0;
-    if(data){
-      Object.values(data).forEach(it=>{
-        txCount++;
-        totalFare += Number(it.fare||0);
+
+    let tx = 0, money = 0;
+    if (data) {
+      Object.values(data).forEach(it => {
+        tx++;
+        money += Number(it.fare || 0);
       });
     }
-    txCountEl.textContent = txCount;
-    totalFareEl.textContent = totalFare;
+
+    txCountEl.textContent = tx;
+    totalFareEl.textContent = money;
   });
 
-  db.ref('metro/stations').on('value', snap=>{
-    const s = snap.val() || {};
-    const online = Object.values(s).filter(x=>x.device_status==='online').length;
-    onlineCountEl.textContent = online;
+  refreshBtn.addEventListener("click", () => {
+    db.ref("metro/transactions")
+      .once("value")
+      .then(s => renderRows(s.val()));
   });
 
-  refreshBtn.addEventListener('click', ()=>{
-    db.ref('metro/transactions').once('value').then(s=>renderRows(s.val()));
+    // === THÊM PHẦN NÀY ĐỂ TỰ ĐỘNG TẠO THẺ NẾU UID CHƯA TỒN TẠI ===
+  
+  const cardsRef = db.ref("metro/cards");
+
+  function ensureCardExists(uid) {
+    if (!uid) return;
+
+    cardsRef.child(uid).once("value", snap => {
+      if (!snap.exists()) {
+        cardsRef.child(uid).set({
+          balance: 0,
+          created_at: Date.now(),
+          active: true
+        });
+        console.log(">> Đã tạo thẻ mới trong Firebase:", uid);
+      }
+    });
+  }
+
+  // Lắng nghe mọi giao dịch mới → tự động thêm thẻ nếu chưa có
+  db.ref("metro/transactions").on("child_added", snap => {
+    const item = snap.val();
+    if (item && item.uid) ensureCardExists(item.uid);
   });
-</script>
+  </script>
+
 </body>
 </html>

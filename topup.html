@@ -17,11 +17,26 @@
   </div>
 
   <div class="card" style="max-width:600px; margin: 12px auto;">
+
+    <!-- CHỌN GA -->
+    <div class="form-row">
+      <select id="station" class="input">
+        <option value="">-- Chọn ga --</option>
+        <option value="GA_A">Ga A</option>
+        <option value="GA_B">Ga B</option>
+        <option value="GA_C">Ga C</option>
+      </select>
+    </div>
+
     <div class="form-row">
       <input id="uid" class="input" placeholder="UID thẻ (VD: UID_001)">
       <input id="amount" class="input" placeholder="Số tiền (VND)">
+    </div>
+
+    <div class="form-row">
       <button id="topup" class="btn">Nạp</button>
     </div>
+
     <div id="message" class="small" style="margin-top:10px;"></div>
   </div>
 
@@ -42,10 +57,16 @@
   document.getElementById("topup").addEventListener("click", async () => {
     const uid = document.getElementById("uid").value.trim();
     const amount = Number(document.getElementById("amount").value);
+    const station = document.getElementById("station").value;
     const msg = document.getElementById("message");
 
+    if (!station) {
+      msg.textContent = "Vui lòng chọn GA nạp tiền!";
+      return;
+    }
+
     if (!uid || amount <= 0) {
-      msg.textContent = "Nhập UID và số tiền hợp lệ";
+      msg.textContent = "Nhập UID và số tiền hợp lệ!";
       return;
     }
 
@@ -55,9 +76,11 @@
 
     card.balance += amount;
     card.last_topup = Math.floor(Date.now() / 1000);
+    card.last_station = station;
 
     await ref.set(card);
-    msg.textContent = "Nạp thành công! Số dư mới: " + card.balance + " VND";
+
+    msg.textContent = `Nạp thành công tại ${station}! Số dư mới: ${card.balance} VND`;
   });
 </script>
 </body>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Thêm thẻ Metro</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+</head>
+
+<body>
+  <h2>Thêm thẻ mới</h2>
+
+  <input id="uid" placeholder="UID thẻ (VD: 4FA23B10)">
+  <button id="add">Thêm thẻ</button>
+
+  <p id="msg"></p>
+
+<script>
+  const firebaseConfig = {
+    databaseURL: "https://metrosystem-c3170-default-rtdb.asia-southeast1.firebasedatabase.app"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  document.getElementById("add").onclick = async () => {
+    const uid = document.getElementById("uid").value.trim();
+    const msg = document.getElementById("msg");
+
+    if (!uid) { msg.textContent = "Vui lòng nhập UID"; return; }
+
+    await db.ref("metro/cards/" + uid).set({
+      balance: 0,
+      last_topup: 0
+    });
+
+    msg.textContent = "Tạo thẻ thành công!";
+  };
+</script>
+</body>
+</html>
