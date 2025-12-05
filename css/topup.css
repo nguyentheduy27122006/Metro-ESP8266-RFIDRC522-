@@ -1,0 +1,37 @@
+.form-row {
+  width: 100%;
+  display: flex;
+  margin: 10px 0;
+}
+.form-row:last-child {
+  justify-content: flex-end;
+}
+.form-row .input {
+  width: 100%;
+}
+.form-row .btn {
+  margin: 0 5px;
+}
+
+/* Hàng chứa QR */
+.qr-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+/* QR dạng hình */
+#qrBox {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.qr-img {
+  width: 300px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  object-fit: cover;
+  background: #fafafa;
+}

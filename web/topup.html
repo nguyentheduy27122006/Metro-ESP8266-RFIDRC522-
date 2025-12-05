@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nạp tiền - Metro</title>
+
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/topup.css">
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1>Nạp tiền cho thẻ</h1>
+    <a href="index.html" class="btn">Dashboard</a>
+  </div>
+
+  <div class="card" style="max-width:600px; margin: 12px auto;">
+
+    <div class="form-row">
+      <input id="uid" class="input" placeholder="UID thẻ (VD: UID_001)">
+    </div>
+    
+    <div class="form-row" style="margin-top: 15px">
+      <input id="amount" class="input" placeholder="Số tiền (VND)">
+    </div>
+    <!-- Chọn nhanh số tiền -->
+    <div class="form-row amount-buttons">
+      <button data-value="20000" class="btn">20.000</button>
+      <button data-value="50000" class="btn">50.000</button>
+      <button data-value="100000" class="btn">100.000</button>
+      <button data-value="200000" class="btn">200.000</button>
+    </div>
+
+
+    <!-- QR BUTTON -->
+    <!-- <div class="form-row">
+      <button id="scanQR" class="btn">Quét QR</button>
+    </div> -->
+
+    <!-- QR IMAGE BOX -->
+    <div class="form-row" id="qrBox" style="margin-top: 15px">
+      <img id="qrImage" src="../image/qr.png" class="qr-img">
+    </div>
+
+    
+
+    <div class="form-row">
+      <button id="topup" class="btn btn-primary">Nạp</button>
+    </div>
+
+  </div>
+
+  <div id="toast"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://metrosystem-c3170-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Toast
+function showToast(text) {
+  const t = document.getElementById("toast");
+  t.textContent = text;
+  t.classList.add("show");
+
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+// Nút chọn nhanh số tiền
+document.querySelectorAll(".amount-buttons button").forEach(btn => {
+  btn.onclick = () => {
+    document.getElementById("amount").value = btn.dataset.value;
+  };
+});
+
+// Chức năng nạp tiền
+document.getElementById("topup").addEventListener("click", async () => {
+  const uid = document.getElementById("uid").value.trim();
+  const amountRaw = document.getElementById("amount").value.trim();
+  const amount = Number(amountRaw);
+
+  if (!uid) return showToast("⚠️ Vui lòng nhập UID!");
+  if (!amountRaw || isNaN(amount) || amount <= 0) 
+    return showToast("⚠️ Số tiền không hợp lệ!");
+
+  showToast("⏳ Đang xử lý...");
+  await new Promise(res => setTimeout(res, 1000));
+
+  try {
+    const ref = db.ref("metro/cards/" + uid);
+    const snap = await ref.once("value");
+
+    let card = snap.val();
+
+    if (!card) {
+      // Nếu thẻ chưa tồn tại → tạo mới
+      card = {
+        balance: amount,
+        last_topup: Math.floor(Date.now() / 1000)
+      };
+    } else {
+      // Nếu thẻ tồn tại → cộng thêm tiền
+      card.balance += amount;
+      card.last_topup = Math.floor(Date.now() / 1000);
+    }
+
+    // Lưu dữ liệu
+    await ref.set(card);
+
+    showToast(`✅ Nạp thành công! Số dư mới: ${card.balance} VND`);
+
+  } catch (err) {
+    console.error(err);
+    showToast("❌ Lỗi khi nạp tiền!");
+  }
+});
+</script>
+
+
+</body>
+</html>
